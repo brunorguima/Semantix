@@ -1,0 +1,95 @@
+
+# IMPORTANTE: Foi feita a leitura apenas do primeiro dataset, o segundo estava pedindo usuário e senha#
+
+# Questão 1: Número de hosts únicos
+scala> val data = sc.textFile ("input/C:/Users/bruno/Desktop/NASA_access_log_Jul95")
+data: org.apache.spark.rdd.RDD[String] = input/C:/Users/bruno/Desktop/NASA_access_log_Jul95 MapPartitionsRDD[33] at textFile at <console>:24
+
+scala> val colunaHost = data.map(_.split(" ")).map(column=>(column(0),1))
+colunaHost: org.apache.spark.rdd.RDD[(String, Int)] = MapPartitionsRDD[35] at map at <console>:25
+
+scala> val contagemHost = colunaHost.reduceByKey(_ + _)
+contagemHost: org.apache.spark.rdd.RDD[(String, Int)] = ShuffledRDD[36] at reduceByKey at <console>:25
+
+scala> val HostDistintos = contagemHost.filter(_._2 == 1)
+HostDistintos: org.apache.spark.rdd.RDD[(String, Int)] = MapPartitionsRDD[37] at filter at <console>:25
+
+scala> val countDistinctHosts = HostDistintos.count()
+countDistinctHosts: Long = 5701
+
+São 5701 host únicos
+
+# Questão 2: Total de Erros 404
+
+
+scala> val linhas404 = data.map(_.split(" ")).filter(_.contains("404"))
+linhas404: org.apache.spark.rdd.RDD[Array[String]] = MapPartitionsRDD[47] at filter at <console>:25
+
+
+scala> val colunaStatus = linhas404.map (column=>(column(8),1))
+colunaStatus: org.apache.spark.rdd.RDD[(String, Int)] = MapPartitionsRDD[48] at map at <console>:25
+
+
+scala> val status404 = colunaStatus.filter (_._1 == "404")
+
+
+scala> val contagemStatus404 = status404.count()
+contagemStatus404: Long = 10713
+
+São 10713 erros 404
+
+# Questão 3: Os 5 URLs que mais causaram erro 404.
+
+scala> val reqStatus = linhas404 .map(column=>(column(5) + " " + column(6) + " " + column(7),column(8),1))
+reqStatus: org.apache.spark.rdd.RDD[(String, String, Int)] = MapPartitionsRDD[53] at map at <console>:25
+
+
+scala> val reqStatus404 = reqStatus.filter(_._2 == "404")
+reqStatus404: org.apache.spark.rdd.RDD[(String, String, Int)] = MapPartitionsRDD[54] at filter at <console>:25
+
+
+scala> var mapaStatus404 = reqStatus404.map({case (a,b,c)=>((a,b),c)})
+mapaStatus404: org.apache.spark.rdd.RDD[((String, String), Int)] = MapPartitionsRDD[55] at map at <console>:25
+
+
+scala> mapaStatus404 = mapaStatus404 .reduceByKey(_ + _)
+mapaStatus404: org.apache.spark.rdd.RDD[((String, String), Int)] = ShuffledRDD[56] at reduceByKey at <console>:25
+
+
+scala> mapaStatus404.sortBy(_._2,false).take(5).foreach(println)
+(("GET /pub/winvn/readme.txt HTTP/1.0",404),667)
+(("GET /pub/winvn/release.txt HTTP/1.0",404),547)
+(("GET /history/apollo/apollo-13.html HTTP/1.0",404),286)
+(("GET /shuttle/resources/orbiters/atlantis.gif HTTP/1.0",404),230)
+(("GET /history/apollo/a-001/a-001-patch-small.gif HTTP/1.0",404),230)
+
+
+# Questão 4 - Quantidade de erros 404 por dia
+
+scala> val timest = linhas404.map(column=>(column(3).substring(1,12),column(8),1))
+timest: org.apache.spark.rdd.RDD[(String, String, Int)] = MapPartitionsRDD[94] at map at <console>:41
+
+
+scala> val 404Status = timest.filter(_._2 == "404")
+
+
+scala> var mapaStatus404 = 404Status.map({case (a,b,c)=>((a,b),c)})
+
+scala> mapaStatus404 = mapaStatus404.reduceByKey(_ + _)
+mapaStatus404: org.apache.spark.rdd.RDD[((String, String), Int)] = MapPartitionsRDD[95] at reduceByKey at <console>:41
+
+scala> mapaStatus404.foreach(println)
+
+# Questão 5: O total de bytes retornados.
+
+// LINHAS VÁLIDAS //
+val linhasval = data.map(_.split(" ")).filter{_.size == 10}
+
+scala> val bytesValidos = bytes.filter(_._2 != "-")
+bytesValidos: org.apache.spark.rdd.RDD[(String, String)] = MapPartitionsRDD[92] at filter at <console>:41
+
+scala> val bytest = bytesValidos.map({case (a,b) => (b.toInt)})
+bytest: org.apache.spark.rdd.RDD[Int] = MapPartitionsRDD[93] at map at <console>:41
+
+scala> val bytesSum = bytest.reduce(_ + _)
+bytesSum: Int = 188342824
